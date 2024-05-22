@@ -7,7 +7,10 @@ export class Tile {
     this.h = h;
     this.x = x;
     this.y = y;
-    this.scale = scale;
+    // this.scale = scale;
+    this.scale = Math.floor(
+      this.p.map(this.h < this.w ? this.h : this.w, 0, 2000, 1, 20)
+    );
     this.layers = 10;
     this.bufferImages = [];
     this.points = [];
@@ -84,10 +87,32 @@ export class Tile {
           pnt.y - this.bufferImages[pnt.l].height / 2
         );
       });
-      // img.fill(this.swap ? PARAMS.bgColor1 : PARAMS.bgColor2);
-      // if (Math.random() > 0.5) img.rect(0, 0, this.w, this.h);
-      // img.circle(this.w / 2, this.h / 2, this.w > this.h ? this.h : this.w);
+      // // Generate a gradient overlay
+      // let gradient = this.p.createGraphics(this.w, this.h);
+      // for (let i = 0; i <= this.h; i++) {
+      //   let inter = this.p.map(i, 0, this.h, 0, 1);
+      //   let c = this.p.lerpColor(
+      //     this.p.color(0, 0, 0, 25),
+      //     this.p.color(0, 0, 0, 0),
+      //     inter
+      //   );
+      //   gradient.stroke(c);
+      //   gradient.line(0, i, this.w, i);
+      // }
+      // gradient.filter(this.p.BLUR, 200);
+      // img.image(gradient, 0, 0);
+      // this.p.loadPixels();
+      // for (let p = 0; p < pixels.length; p += 4) {
+      //   let dp = 10 * (this.p.random() - this.p.random());
+      //   pixels[p] = pixels[p] + dp;
+      //   pixels[p + 1] = pixels[p + 1] + dp;
+      //   pixels[p + 2] = pixels[p + 2] + dp;
+      // }
+      // this.p.updatePixels();
       this.tile.image(img, 0, 0);
+      // img.fill(this.swap ? PARAMS.bgColor1 : PARAMS.bgColor2);
+      // if (Math.random() > 0.5) this.tile.rect(0, 0, this.w, this.h);
+      // img.circle(this.w / 2, this.h / 2, this.w > this.h ? this.h : this.w);
     });
   }
 }

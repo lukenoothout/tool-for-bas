@@ -4,7 +4,7 @@ export class Treemap {
     this.h = h;
     this.depth = depth;
     this.cells = [];
-    this.depthChange = 3;
+    this.depthChange = depth;
     this.createCell(0, 0, this.w, this.h, this.depth);
   }
 
@@ -18,14 +18,14 @@ export class Treemap {
           x,
           y,
           w,
-          h * div1,
+          Math.ceil(h * div1),
           depth - (Math.floor(Math.random() * this.depthChange) + 1)
         );
         this.createCell(
           x,
-          y + h * div1,
+          Math.floor(y + h * div1),
           w,
-          h * div2,
+          Math.ceil(h * div2),
           depth - (Math.floor(Math.random() * this.depthChange) + 1)
         );
       }
@@ -33,14 +33,14 @@ export class Treemap {
         this.createCell(
           x,
           y,
-          w * div1,
+          Math.ceil(w * div1),
           h,
           depth - (Math.floor(Math.random() * this.depthChange) + 1)
         );
         this.createCell(
-          x + w * div1,
+          Math.floor(x + w * div1),
           y,
-          w * div2,
+          Math.ceil(w * div2),
           h,
           depth - (Math.floor(Math.random() * this.depthChange) + 1)
         );
