@@ -18,8 +18,8 @@ const sketch = (p) => {
   let geistMonoRegular;
 
   p.preload = function () {
-    geistMonoBlack = p.loadFont("public/GeistMono-Black.otf");
-    geistMonoRegular = p.loadFont("public/GeistMono-Regular.otf");
+    geistMonoBlack = p.loadFont("GeistMono-Black.otf");
+    geistMonoRegular = p.loadFont("GeistMono-Regular.otf");
   };
 
   p.setup = function () {};
