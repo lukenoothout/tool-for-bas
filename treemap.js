@@ -10,9 +10,10 @@ export class Treemap {
 
   createCell(x, y, w, h, depth) {
     if (depth > 0) {
-      const div1 = Math.floor(Math.random() * 7 + 2) / 10; // Random number between 0.2 and 0.8
+      const div1 = Math.floor(Math.random() * 3 + 6) / 10; // Random number between 0.2 and 0.8
       const div2 = 1 - div1;
-      let direction = Math.floor(Math.random() * 2); // Horizontal = 0, Vertical = 1;
+      // let direction = Math.floor(Math.random() * 2); // Horizontal = 0, Vertical = 1;
+      let direction = w > h ? 1 : 0; // Always dived through the longest side
       if (direction === 0) {
         this.createCell(
           x,

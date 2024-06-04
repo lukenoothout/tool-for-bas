@@ -3,18 +3,12 @@ import { Pane } from "tweakpane";
 export const pane = new Pane();
 
 export const PARAMS = {
-  width: 1190,
-  height: 1684,
-  seed: Math.floor(Math.random() * 100000),
-  depth: 2,
-  bgColor1: "#EEE",
-  dotColor1: "#555",
-  bgColor2: "#F5EAE6",
-  dotColor2: "#0038FF",
-  // bgColor: "#EAAAF0",
-  // dotColor: "#FF8787",
-
+  width: 1920,
+  height: 1080,
+  layout: 0,
+  palette: 0,
   running: false,
+  progress: 0,
 };
 
 const settings = pane.addFolder({
@@ -25,34 +19,50 @@ const settings = pane.addFolder({
 const width = settings.addBinding(PARAMS, "width", {
   step: 1,
 });
+
 const height = settings.addBinding(PARAMS, "height", {
   step: 1,
 });
-const depth = settings.addBinding(PARAMS, "depth", {
-  step: 1,
+
+const layout = settings.addBlade({
+  view: "list",
+  label: "layout",
+  options: [
+    { text: "Hero Image Full HD", value: 0 },
+    { text: "Info Block Full HD", value: 1 },
+    { text: "Hero Image Instagram", value: 2 },
+    { text: "Speaker Anouncement Instagram", value: 3 },
+    { text: "Info Block Instagram", value: 4 },
+    { text: "Portait Poster", value: 5 },
+  ],
+  value: 0,
 });
-const seed = settings.addBinding(PARAMS, "seed", {
-  step: 1,
+
+const palette = settings.addBlade({
+  view: "list",
+  label: "palette",
+  options: [
+    { text: "blue", value: 0 },
+    { text: "green", value: 1 },
+    { text: "yellow", value: 2 },
+    { text: "red", value: 3 },
+    { text: "orange", value: 4 },
+  ],
+  value: 0,
 });
-const newSeed = settings.addButton({
-  title: "Randomize",
-  label: "seed",
-});
-const bgColor1 = settings.addBinding(PARAMS, "bgColor1");
-const dotColor1 = settings.addBinding(PARAMS, "dotColor1");
-const bgColor2 = settings.addBinding(PARAMS, "bgColor2");
-const dotColor2 = settings.addBinding(PARAMS, "dotColor2");
-// const running = settings.addBinding(PARAMS, "running");
+
 const run = settings.addButton({
   title: "Generate",
 });
 
-newSeed.on("click", () => {
-  PARAMS.seed = Math.floor(Math.random() * 100000);
-  PARAMS.running = true;
-  pane.refresh();
-});
-
 run.on("click", () => {
   PARAMS.running = true;
+});
+
+palette.on("change", () => {
+  PARAMS.palette = palette.value;
+});
+
+layout.on("change", () => {
+  PARAMS.layout = layout.value;
 });
