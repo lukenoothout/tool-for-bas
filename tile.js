@@ -1,4 +1,4 @@
-import { PARAMS } from "./pane";
+import { PARAMS, pane } from "./pane";
 import { embeddings } from "./public/embeddings";
 
 export class Tile {
@@ -11,28 +11,34 @@ export class Tile {
     this.containsContent = containsContent; // Check if the cell should be blured to accomodate content
     this.fontBold = fontBold;
     this.fontRegular = fontRegular;
-    // Take the smallest dimension, and map it's size between 1 and 20
-    // this.scale = Math.floor(
-    //   this.p.map(this.h < this.w ? this.h : this.w, 0, 2000, 1, 10)
-    // );
-    this.scale = Math.floor(this.p.random() * 19 + 1);
-    // console.log(this.scale);
-    // this.layers = Math.floor(Math.random() * 3) * 2 + 3;
+    this.scale = 10;
     this.layers = 10;
-    this.bufferImages = [];
+    this.bufferImages = [[], []];
     this.points = [];
     this.annotions = [];
     this.swap = Math.random() > 0.5; // For each cell, pick one of the two color combinations
-    this.palettes = ["#0038FF", "#70EFC5", "#FFAF00", "#FF3A63", "#F67600"];
-    // this.cellSize = 5 * this.scale;
-    // this.nCellsInWidth = this.w / this.cellSize;
-    // this.nCellsInHeight = this.h / this.cellSize;
-    // console.log(this.cellSize, this.nCellsInWidth, this.nCellsInHeight);
-    // this.bgColor = this.p.color("#F5F5F5");
-    this.bgColor = this.p.color("#000");
-    this.blue = this.p.color("#0038FF");
-    this.spotColor = this.p.color(this.palettes[PARAMS.palette]);
-    this.pushToGrid = Math.random() > 1;
+    this.palettes = ["#E770DE", "#FFADED", "#00C212", "#DDADED", "#000000"];
+    this.spotColors = [];
+    // this.spotColors.push(this.palettes[PARAMS.palette]);
+    // this.spotColors.push(this.palettes[PARAMS.palette2]);
+    this.spotColors.push(
+      this.p.color(PARAMS.color1.r, PARAMS.color1.g, PARAMS.color1.b)
+    );
+    this.spotColors.push(
+      this.p.color(PARAMS.color2.r, PARAMS.color2.g, PARAMS.color2.b)
+    );
+    // console.log(this.spotColors);
+    // this.bgColor = this.p.color("#EEEDF5");
+    this.bgColor = this.p.color(
+      PARAMS.background.r,
+      PARAMS.background.g,
+      PARAMS.background.b
+    );
+    // this.bgColor = this.p.color("#FFF");
+    this.pushToGrid = PARAMS.pushToGrid;
+    PARAMS.scale = PARAMS.customSettings
+      ? PARAMS.scale
+      : Math.floor(Math.random() * 30) + 10;
 
     this.generateCross();
     this.generatePoints();
@@ -52,27 +58,30 @@ export class Tile {
   }
 
   bufferDots() {
-    // Generate images of the dots, with different levels of blur and opacity for each layer
-    for (let i = 0; i < this.layers; i++) {
-      // Offset to change parameters based on the layer (using a sine wave to make the effects the least for the middle layers)
-      let layerOffset =
-        this.p.sin((this.p.PI / this.layers) * i + this.p.PI) + 1;
+    for (let index = 0; index < 2; index++) {
+      // Generate images of the dots, with different levels of blur and opacity for each layer
+      for (let i = 0; i < this.layers; i++) {
+        // Offset to change parameters based on the layer (using a sine wave to make the effects the least for the middle layers)
+        let layerOffset =
+          this.p.sin((this.p.PI / this.layers) * i + this.p.PI) + 1;
 
-      // Set up a buffer image for each dot and push to the imgs array
-      let bufferSize = 400;
-      let buffer = this.p.createGraphics(bufferSize, bufferSize);
-      buffer.noStroke();
-      // buffer.fill(this.swap ? this.spotColor : this.blue);
-      buffer.fill(255);
-      // buffer.fill(Math.random() > 0.5 ? this.palettes[0] : this.palettes[1]);
-      buffer.circle(
-        bufferSize / 2,
-        bufferSize / 2,
-        // this.cellSize * 0.8 + i * 4
-        this.cellSize * 0.8 * (i / 5)
-      );
-      buffer.filter(this.p.BLUR, layerOffset * 10);
-      this.bufferImages.push(buffer);
+        // Set up a buffer image for each dot and push to the imgs array
+        let bufferSize = 400;
+        let buffer = this.p.createGraphics(bufferSize, bufferSize);
+        buffer.noStroke();
+        // buffer.fill(this.swap ? this.spotColor : this.blue);
+        if (PARAMS.backgroundFade) this.spotColor.setAlpha(255 - (9 - i) * 20);
+        buffer.fill(this.spotColors[index]);
+        // buffer.fill(Math.random() > 0.5 ? this.palettes[0] : this.palettes[1]);
+        buffer.circle(
+          bufferSize / 2,
+          bufferSize / 2,
+          // this.cellSize * 0.8 + i * 4
+          this.cellSize * i
+        );
+        buffer.filter(this.p.BLUR, layerOffset * 10);
+        this.bufferImages[index].push(buffer);
+      }
     }
   }
 
@@ -80,11 +89,18 @@ export class Tile {
     // Select 1 embedding as the focal point
     for (let image = 0; image < 2; image++) {
       this.points.push([]);
-      const keyEmbedding =
-        embeddings[Math.floor(Math.random() * embeddings.length)];
-      const rangeWidth = Math.floor(Math.random() * 15 + 5);
-      const rangeHeight = Math.floor(Math.random() * 15 + 5);
-      const rangeDepth = Math.floor(Math.random() * 15 + 5);
+      if (!PARAMS.customSettings) {
+        PARAMS.keyEmbedding = Math.floor(Math.random() * embeddings.length);
+        PARAMS.rangeWidth = Math.floor(Math.random() * 35 + 5);
+        PARAMS.rangeHeight = Math.floor(Math.random() * 35 + 5);
+        PARAMS.rangeDepth = Math.floor(Math.random() * 35 + 5);
+        pane.refresh();
+      }
+
+      const keyEmbedding = embeddings[PARAMS.keyEmbedding];
+      const rangeWidth = PARAMS.rangeWidth;
+      const rangeHeight = PARAMS.rangeHeight;
+      const rangeDepth = PARAMS.rangeDepth;
 
       const leftBoundary = keyEmbedding.embedding[0] - rangeWidth;
       const rightBoundary = keyEmbedding.embedding[0] + rangeWidth;
@@ -92,8 +108,6 @@ export class Tile {
       const topBoundary = keyEmbedding.embedding[1] + rangeHeight;
       const frontBoundary = keyEmbedding.embedding[2] - rangeDepth;
       const backBoundary = keyEmbedding.embedding[2] + rangeDepth;
-
-      // console.log(keyEmbedding);
 
       // Array that will hold all the embeddings currently in range
       let embeddingsInRange = embeddings.filter(
@@ -106,22 +120,10 @@ export class Tile {
           emb.embedding[2] < backBoundary
       );
 
-      // this.scale = this.p.constrain(
-      //   this.p.map(embeddingsInRange.length, 500, 50, 1, 10),
-      //   1,
-      //   10
-      // );
-      this.scale = this.p.random(1, 20);
-      this.cellSize = 5 * this.scale;
+      this.cellSize = PARAMS.scale;
       this.nCellsInWidth = this.w / this.cellSize;
       this.nCellsInHeight = this.h / this.cellSize;
 
-      // console.log("scale: " + this.scale);
-      // console.log("cellSize: " + this.cellSize);
-      // console.log("nCellsInWidth: " + this.nCellsInWidth);
-      // console.log("nCellsInHeight: " + this.nCellsInHeight);
-
-      // console.log(embeddingsInRange.length);
       // Translate the coordinates to fit within the tile
       if (this.pushToGrid) {
         embeddingsInRange.forEach((emb) => {
@@ -154,10 +156,12 @@ export class Tile {
               this.layers
             )
           );
+          const _c = image;
           this.points[image].push({
             x: _x,
             y: _y,
             l: _z,
+            c: _c,
           });
         });
       }
@@ -186,14 +190,16 @@ export class Tile {
               this.layers
             )
           );
+          const _c = image;
           this.points[image].push({
             x: _x,
             y: _y,
             l: _z,
+            c: _c,
           });
         });
-        this.points[image] = [...new Set(this.points[image])];
       }
+
       const randomIndex = Math.floor(Math.random() * this.points[image].length);
       const annotation = embeddingsInRange[randomIndex];
       this.annotions.push({
@@ -231,93 +237,174 @@ export class Tile {
   }
 
   render() {
-    this.layerScale = 0.2;
+    this.layerScale = 1.5 * this.cellSize;
     this.mainImage = this.p.createGraphics(this.w, this.h);
-    this.mainImage.blendMode(this.p.EXCLUSION);
     this.tile = this.p.createGraphics(this.w, this.h);
-    // let layers = this.p.createGraphics(this.w, this.h);
-    this.tile.background(this.bgColor);
-    // set the Blendmode
-    this.tile.blendMode(this.p.SCREEN);
+    this.tile.background(this.bgColor); // turn back on!
 
-    // For each set of points, create a buffer image that set of points and draw it on the canvas.
-    this.points.forEach((set, i) => {
-      let img = this.p.createGraphics(this.w, this.h);
-      img.blendMode(this.p.DIFFERENCE);
-      img.background(this.bgColor);
-      img.fill(255);
-      // for (let y = 0; y < this.nCellsInWidth; y++) {
-      //   for (let x = 0; x < this.nCellsInHeight; x++) {
-      //     img.square(x * this.cellSize, y * this.cellSize, this.cellSize);
-      //   }
-      // }
-      set.forEach((pnt) => {
-        if (this.bufferImages[pnt.l] && pnt.l) {
-          // img.noFill();
-          // img.stroke(255);
-          // img.square(pnt.x, pnt.y, pnt.cellSize);
-          if (this.pushToGrid) {
-            console.log(pnt.x, pnt.y);
+    if (PARAMS.mode === 0) {
+      // For each set of points, create a buffer image that set of points and draw it on the canvas.
+      this.points.forEach((set, i) => {
+        let img = this.p.createGraphics(this.w, this.h);
+        // img.background(this.bgColor); // turn back on!
+        set.forEach((pnt) => {
+          if (this.bufferImages[pnt.c][pnt.l]) {
             // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
             img.image(
-              this.bufferImages[pnt.l],
-              (pnt.x * pnt.l) / 5 - this.bufferImages[pnt.l].width / 2,
-              (pnt.y * pnt.l) / 5 - this.bufferImages[pnt.l].height / 2
+              this.bufferImages[pnt.c][pnt.l],
+              pnt.x * pnt.l -
+                this.bufferImages[pnt.c][pnt.l].width / 2 +
+                pnt.l *
+                  this.layerScale *
+                  this.p.map(
+                    pnt.x - this.w / 2,
+                    -this.w / 2,
+                    this.w / 2,
+                    -1,
+                    1
+                  ),
+              pnt.y * pnt.l -
+                this.bufferImages[pnt.c][pnt.l].height / 2 +
+                pnt.l *
+                  this.layerScale *
+                  this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
             );
           }
-          if (!this.pushToGrid) {
+        });
+        this.tile.image(img, 0, 0);
+        // this.tile.fill(this.palettes[PARAMS.palette]);
+        // if (this.containsContent) this.tile.filter(this.p.BLUR, 20);
+      });
+      this.mainImage.background(this.bgColor);
+      // this.mainImage.blendMode(this.p.EXCLUSION);
+      this.mainImage.image(this.tile, 0, 0);
+    }
+
+    if (PARAMS.mode === 1) {
+      const allPoints = this.points.flat();
+      console.log(allPoints);
+      // For each layer, filter out the points on that layer.
+      for (let l = 0; l < this.layers; l++) {
+        const pointsInLayer = allPoints.filter((pnt) => pnt.l === l);
+
+        let img = this.p.createGraphics(this.w, this.h);
+        // img.background(this.bgColor); // turn back on!
+        pointsInLayer.forEach((pnt) => {
+          if (this.bufferImages[pnt.c][pnt.l]) {
+            // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
             img.image(
-              this.bufferImages[pnt.l],
-              pnt.x * pnt.l * this.layerScale -
-                this.bufferImages[pnt.l].width / 2,
-              pnt.y * pnt.l * this.layerScale -
-                this.bufferImages[pnt.l].height / 2
+              this.bufferImages[pnt.c][pnt.l],
+              pnt.x * pnt.l -
+                this.bufferImages[pnt.c][pnt.l].width / 2 +
+                pnt.l *
+                  this.layerScale *
+                  this.p.map(
+                    pnt.x - this.w / 2,
+                    -this.w / 2,
+                    this.w / 2,
+                    -1,
+                    1
+                  ),
+              pnt.y * pnt.l -
+                this.bufferImages[pnt.c][pnt.l].height / 2 +
+                pnt.l *
+                  this.layerScale *
+                  this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
+            );
+          }
+        });
+        this.tile.image(img, 0, 0);
+        // this.tile.fill(this.palettes[PARAMS.palette]);
+        // if (this.containsContent) this.tile.filter(this.p.BLUR, 20);
+      }
+      this.mainImage.background(this.bgColor);
+      // this.mainImage.blendMode(this.p.EXCLUSION);
+      this.mainImage.image(this.tile, 0, 0);
+    }
+
+    if (PARAMS.mode === 2) {
+      // For each set of points, create a buffer image that set of points and draw it on the canvas.
+      let img = this.p.createGraphics(this.w, this.h);
+      // img.background(this.bgColor); // turn back on!
+      this.points[0].forEach((pnt) => {
+        if (this.bufferImages[pnt.c][pnt.l]) {
+          // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
+          img.image(
+            this.bufferImages[pnt.c][pnt.l],
+            pnt.x * pnt.l -
+              this.bufferImages[pnt.c][pnt.l].width / 2 +
+              pnt.l *
+                this.layerScale *
+                this.p.map(pnt.x - this.w / 2, -this.w / 2, this.w / 2, -1, 1),
+            pnt.y * pnt.l -
+              this.bufferImages[pnt.c][pnt.l].height / 2 +
+              pnt.l *
+                this.layerScale *
+                this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
+          );
+        }
+      });
+      let highlights = this.p.createGraphics(this.w, this.h);
+      this.points[0].forEach((pnt) => {
+        if (Math.random() < PARAMS.highlightchance) {
+          if (this.bufferImages[1][pnt.l]) {
+            // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
+            img.image(
+              this.bufferImages[1][pnt.l],
+              pnt.x * pnt.l -
+                this.bufferImages[1][pnt.l].width / 2 +
+                pnt.l *
+                  this.layerScale *
+                  this.p.map(
+                    pnt.x - this.w / 2,
+                    -this.w / 2,
+                    this.w / 2,
+                    -1,
+                    1
+                  ),
+              pnt.y * pnt.l -
+                this.bufferImages[1][pnt.l].height / 2 +
+                pnt.l *
+                  this.layerScale *
+                  this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
             );
           }
         }
       });
-      img.fill(255);
-      img.rect(0, 0, this.w, this.h);
+
       this.tile.image(img, 0, 0);
-      this.tile.fill(this.palettes[PARAMS.palette]);
-      // this.tile.fill(
-      //   this.palettes[Math.floor(Math.random() * this.palettes.length)]
-      // );
-      // this.tile.fill(this.swap ? this.spotColor : this.blue);
-      this.tile.rect(0, 0, this.w, this.h);
-      if (this.containsContent) this.tile.filter(this.p.BLUR, 20);
+      // this.tile.fill(this.palettes[PARAMS.palette]);
+      // if (this.containsContent) this.tile.filter(this.p.BLUR, 20);
+
+      this.mainImage.background(this.bgColor);
+      // this.mainImage.blendMode(this.p.EXCLUSION);
       this.mainImage.image(this.tile, 0, 0);
-      // this.mainImage.noStroke();
-      // this.mainImage.fill("#FF0000");
-      // this.mainImage.circle(
-      //   Math.random() * this.w,
-      //   Math.random() * this.h,
-      //   this.cellSize / 5
-      // );
-    });
-    this.mainImage.noStroke();
-    this.mainImage.fill(255);
-    this.mainImage.rect(0, 0, this.w, this.h);
-    this.mainImage.blendMode(this.p.BLEND);
-    this.mainImage.textAlign(this.p.LEFT, this.p.CENTER);
-    if (!this.containsContent) {
-      const x = (this.annotions[0].x * this.annotions[0].l) / 5;
-      const y = (this.annotions[0].y * this.annotions[0].l) / 5;
-      this.mainImage.image(
-        this.cross,
-        x - this.cross.width / 2,
-        y - this.cross.height / 2
-      );
-      this.mainImage.textFont(this.fontBold);
-      this.mainImage.text(`${this.annotions[0].label}`, x + 16, y - 18);
-      this.mainImage.textFont(this.fontRegular);
-      this.mainImage.text(`${this.annotions[0].title}`, x + 16, y - 6);
-      this.mainImage.text(`${this.annotions[0].source}`, x + 16, y + 6);
-      this.mainImage.text(
-        `[${this.annotions[0].embedding[0]}, ${this.annotions[0].embedding[1]}, ${this.annotions[0].embedding[2]}]`,
-        x + 15,
-        y + 18
-      );
     }
+    // this.mainImage.noStroke();
+
+    // this.mainImage.fill(255); // Turn back on
+    // this.mainImage.rect(0, 0, this.w, this.h); // Turn back on
+
+    // this.mainImage.blendMode(this.p.BLEND);
+    // this.mainImage.textAlign(this.p.LEFT, this.p.CENTER);
+    // if (!this.containsContent) {
+    //   const x = (this.annotions[0].x * this.annotions[0].l) / 5;
+    //   const y = (this.annotions[0].y * this.annotions[0].l) / 5;
+    //   this.mainImage.image(
+    //     this.cross,
+    //     x - this.cross.width / 2,
+    //     y - this.cross.height / 2
+    //   );
+    //   this.mainImage.textFont(this.fontBold);
+    //   this.mainImage.text(`${this.annotions[0].label}`, x + 16, y - 18);
+    //   this.mainImage.textFont(this.fontRegular);
+    //   this.mainImage.text(`${this.annotions[0].title}`, x + 16, y - 6);
+    //   this.mainImage.text(`${this.annotions[0].source}`, x + 16, y + 6);
+    //   this.mainImage.text(
+    //     `[${this.annotions[0].embedding[0]}, ${this.annotions[0].embedding[1]}, ${this.annotions[0].embedding[2]}]`,
+    //     x + 15,
+    //     y + 18
+    //   );
+    // }
   }
 }
