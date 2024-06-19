@@ -7,21 +7,21 @@ export const PARAMS = {
   height: 1080,
   layout: 0,
   background: { r: 238, g: 237, b: 245 },
-  color1: { r: 255, g: 173, b: 237 },
-  color2: { r: 221, g: 173, b: 237 },
+  color1: { r: 237, g: 255, b: 0 },
+  color2: { r: 59, g: 212, b: 193 },
   palette: 0,
   palette2: 2,
-  mode: 0,
-  highlightchance: 0.4,
   backgroundFade: false,
-  customSettings: false,
-  pushToGrid: true,
+  keyEmbedding1: 2597, //0
+  keyEmbedding2: 2838, //0
+  lockEmbeddings: false,
+  snapToGrid: true,
   running: false,
-  keyEmbedding: 3658, //0
-  rangeWidth: 20, //10
-  rangeHeight: 20, //10
-  rangeDepth: 20, // 10
-  scale: 17, //10
+  rangeWidth: 24, //20
+  rangeHeight: 20, //20
+  rangeDepth: 10, // 20
+  layerScale: 5,
+  scale: 60, //10
   progress: 0,
 };
 
@@ -38,71 +38,45 @@ const height = settings.addBinding(PARAMS, "height", {
   step: 1,
 });
 
-const layout = settings.addBlade({
-  view: "list",
-  label: "layout",
-  options: [
-    { text: "Hero Image Full HD", value: 0 },
-    { text: "Info Block Full HD", value: 1 },
-    { text: "Hero Image Instagram", value: 2 },
-    { text: "Speaker Anouncement Instagram", value: 3 },
-    { text: "Info Block Instagram", value: 4 },
-    { text: "Portait Poster", value: 5 },
-  ],
-  value: 0,
-});
+// const layout = settings.addBlade({
+//   view: "list",
+//   label: "layout",
+//   options: [
+//     { text: "Hero Image Full HD", value: 0 },
+//     { text: "Info Block Full HD", value: 1 },
+//     { text: "Hero Image Instagram", value: 2 },
+//     { text: "Speaker Anouncement Instagram", value: 3 },
+//     { text: "Info Block Instagram", value: 4 },
+//     { text: "Portait Poster", value: 5 },
+//   ],
+//   value: 0,
+// });
 
 const background = settings.addBinding(PARAMS, "background");
 const color1 = settings.addBinding(PARAMS, "color1");
 const color2 = settings.addBinding(PARAMS, "color2");
 
-// const palette = settings.addBlade({
-//   view: "list",
-//   label: "palette",
-//   options: [
-//     { text: "Hard Pink", value: 0 },
-//     { text: "Soft Pink", value: 1 },
-//     { text: "Green", value: 2 },
-//     { text: "Lilac", value: 3 },
-//     { text: "None", value: 4 },
-//   ],
-//   value: 0,
-// });
-
-// const palette2 = settings.addBlade({
-//   view: "list",
-//   label: "palette2",
-//   options: [
-//     { text: "Hard Pink", value: 0 },
-//     { text: "Soft Pink", value: 1 },
-//     { text: "Green", value: 2 },
-//     { text: "Lilac", value: 3 },
-//     { text: "None", value: 4 },
-//   ],
-//   value: 2,
-// });
-
-const mode = settings.addBlade({
-  view: "list",
-  label: "mode",
-  options: [
-    { text: "Separate layers", value: 0 },
-    { text: "Integrated layers", value: 1 },
-    { text: "Highlight", value: 2 },
-  ],
-  value: 0,
-});
-
-const highlightchance = settings.addBinding(PARAMS, "highlightchance", {
-  min: 0,
-  max: 1,
-  step: 0.01,
-});
-
 // const backgroundFade = settings.addBinding(PARAMS, "backgroundFade");
-const pushToGrid = settings.addBinding(PARAMS, "pushToGrid");
+const snapToGrid = settings.addBinding(PARAMS, "snapToGrid");
 
-const randomize = settings.addBinding(PARAMS, "customSettings");
+// layout.on("change", () => {
+//   PARAMS.layout = layout.value;
+// });
+
+const keyEmbedding1 = settings.addBinding(PARAMS, "keyEmbedding1", {
+  step: 1,
+  min: 0,
+  max: 5556,
+});
+
+const keyEmbedding2 = settings.addBinding(PARAMS, "keyEmbedding2", {
+  step: 1,
+  min: 0,
+  max: 5556,
+});
+
+const lockEmbeddings = settings.addBinding(PARAMS, "lockEmbeddings");
+
 const run = settings.addButton({
   title: "Generate",
 });
@@ -111,31 +85,9 @@ run.on("click", () => {
   PARAMS.running = true;
 });
 
-// palette.on("change", () => {
-//   PARAMS.palette = palette.value;
-// });
-
-// palette2.on("change", () => {
-//   PARAMS.palette2 = palette2.value;
-// });
-
-mode.on("change", () => {
-  PARAMS.mode = mode.value;
-});
-
-layout.on("change", () => {
-  PARAMS.layout = layout.value;
-});
-
 const customize = pane.addFolder({
-  title: "customSettings",
+  title: "Customize view",
   expanded: true,
-});
-
-const keyEmbedding = customize.addBinding(PARAMS, "keyEmbedding", {
-  step: 1,
-  min: 0,
-  max: 5556,
 });
 
 const rangeWidth = customize.addBinding(PARAMS, "rangeWidth", {
@@ -156,10 +108,16 @@ const rangeDepth = customize.addBinding(PARAMS, "rangeDepth", {
   max: 40,
 });
 
+const layerScale = customize.addBinding(PARAMS, "layerScale", {
+  step: 1,
+  min: 1,
+  max: 50,
+});
+
 const scale = customize.addBinding(PARAMS, "scale", {
   step: 1,
   min: 10,
-  max: 40,
+  max: 100,
 });
 
 // keyEmbedding.on("change", () => {

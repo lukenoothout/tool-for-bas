@@ -16,29 +16,19 @@ export class Tile {
     this.bufferImages = [[], []];
     this.points = [];
     this.annotions = [];
-    this.swap = Math.random() > 0.5; // For each cell, pick one of the two color combinations
-    this.palettes = ["#E770DE", "#FFADED", "#00C212", "#DDADED", "#000000"];
     this.spotColors = [];
-    // this.spotColors.push(this.palettes[PARAMS.palette]);
-    // this.spotColors.push(this.palettes[PARAMS.palette2]);
     this.spotColors.push(
       this.p.color(PARAMS.color1.r, PARAMS.color1.g, PARAMS.color1.b)
     );
     this.spotColors.push(
       this.p.color(PARAMS.color2.r, PARAMS.color2.g, PARAMS.color2.b)
     );
-    // console.log(this.spotColors);
-    // this.bgColor = this.p.color("#EEEDF5");
     this.bgColor = this.p.color(
       PARAMS.background.r,
       PARAMS.background.g,
       PARAMS.background.b
     );
-    // this.bgColor = this.p.color("#FFF");
-    this.pushToGrid = PARAMS.pushToGrid;
-    PARAMS.scale = PARAMS.customSettings
-      ? PARAMS.scale
-      : Math.floor(Math.random() * 30) + 10;
+    this.pushToGrid = PARAMS.snapToGrid;
 
     this.generateCross();
     this.generatePoints();
@@ -71,13 +61,14 @@ export class Tile {
         buffer.noStroke();
         // buffer.fill(this.swap ? this.spotColor : this.blue);
         if (PARAMS.backgroundFade) this.spotColor.setAlpha(255 - (9 - i) * 20);
-        buffer.fill(this.spotColors[index]);
+        // buffer.fill(this.spotColors[index]);
+        index === 0 ? buffer.fill(0) : buffer.fill(255);
         // buffer.fill(Math.random() > 0.5 ? this.palettes[0] : this.palettes[1]);
         buffer.circle(
           bufferSize / 2,
           bufferSize / 2,
           // this.cellSize * 0.8 + i * 4
-          this.cellSize * i
+          this.cellSize * 1 + i * PARAMS.layerScale
         );
         buffer.filter(this.p.BLUR, layerOffset * 10);
         this.bufferImages[index].push(buffer);
@@ -89,15 +80,19 @@ export class Tile {
     // Select 1 embedding as the focal point
     for (let image = 0; image < 2; image++) {
       this.points.push([]);
-      if (!PARAMS.customSettings) {
-        PARAMS.keyEmbedding = Math.floor(Math.random() * embeddings.length);
-        PARAMS.rangeWidth = Math.floor(Math.random() * 35 + 5);
-        PARAMS.rangeHeight = Math.floor(Math.random() * 35 + 5);
-        PARAMS.rangeDepth = Math.floor(Math.random() * 35 + 5);
+      if (!PARAMS.lockEmbeddings) {
+        PARAMS.keyEmbedding1 = Math.floor(Math.random() * embeddings.length);
+        PARAMS.keyEmbedding2 = Math.floor(Math.random() * embeddings.length);
+        //   PARAMS.rangeWidth = Math.floor(Math.random() * 35 + 5);
+        //   PARAMS.rangeHeight = Math.floor(Math.random() * 35 + 5);
+        //   PARAMS.rangeDepth = Math.floor(Math.random() * 35 + 5);
         pane.refresh();
       }
 
-      const keyEmbedding = embeddings[PARAMS.keyEmbedding];
+      const keyEmbedding =
+        image === 0
+          ? embeddings[PARAMS.keyEmbedding1]
+          : embeddings[PARAMS.keyEmbedding2];
       const rangeWidth = PARAMS.rangeWidth;
       const rangeHeight = PARAMS.rangeHeight;
       const rangeDepth = PARAMS.rangeDepth;
@@ -239,172 +234,104 @@ export class Tile {
   render() {
     this.layerScale = 1.5 * this.cellSize;
     this.mainImage = this.p.createGraphics(this.w, this.h);
-    this.tile = this.p.createGraphics(this.w, this.h);
-    this.tile.background(this.bgColor); // turn back on!
 
-    if (PARAMS.mode === 0) {
-      // For each set of points, create a buffer image that set of points and draw it on the canvas.
-      this.points.forEach((set, i) => {
-        let img = this.p.createGraphics(this.w, this.h);
-        // img.background(this.bgColor); // turn back on!
-        set.forEach((pnt) => {
-          if (this.bufferImages[pnt.c][pnt.l]) {
-            // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
-            img.image(
-              this.bufferImages[pnt.c][pnt.l],
-              pnt.x * pnt.l -
-                this.bufferImages[pnt.c][pnt.l].width / 2 +
-                pnt.l *
-                  this.layerScale *
-                  this.p.map(
-                    pnt.x - this.w / 2,
-                    -this.w / 2,
-                    this.w / 2,
-                    -1,
-                    1
-                  ),
-              pnt.y * pnt.l -
-                this.bufferImages[pnt.c][pnt.l].height / 2 +
-                pnt.l *
-                  this.layerScale *
-                  this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
-            );
-          }
-        });
-        this.tile.image(img, 0, 0);
-        // this.tile.fill(this.palettes[PARAMS.palette]);
-        // if (this.containsContent) this.tile.filter(this.p.BLUR, 20);
-      });
-      this.mainImage.background(this.bgColor);
-      // this.mainImage.blendMode(this.p.EXCLUSION);
-      this.mainImage.image(this.tile, 0, 0);
-    }
-
-    if (PARAMS.mode === 1) {
-      const allPoints = this.points.flat();
-      console.log(allPoints);
-      // For each layer, filter out the points on that layer.
-      for (let l = 0; l < this.layers; l++) {
-        const pointsInLayer = allPoints.filter((pnt) => pnt.l === l);
-
-        let img = this.p.createGraphics(this.w, this.h);
-        // img.background(this.bgColor); // turn back on!
-        pointsInLayer.forEach((pnt) => {
-          if (this.bufferImages[pnt.c][pnt.l]) {
-            // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
-            img.image(
-              this.bufferImages[pnt.c][pnt.l],
-              pnt.x * pnt.l -
-                this.bufferImages[pnt.c][pnt.l].width / 2 +
-                pnt.l *
-                  this.layerScale *
-                  this.p.map(
-                    pnt.x - this.w / 2,
-                    -this.w / 2,
-                    this.w / 2,
-                    -1,
-                    1
-                  ),
-              pnt.y * pnt.l -
-                this.bufferImages[pnt.c][pnt.l].height / 2 +
-                pnt.l *
-                  this.layerScale *
-                  this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
-            );
-          }
-        });
-        this.tile.image(img, 0, 0);
-        // this.tile.fill(this.palettes[PARAMS.palette]);
-        // if (this.containsContent) this.tile.filter(this.p.BLUR, 20);
-      }
-      this.mainImage.background(this.bgColor);
-      // this.mainImage.blendMode(this.p.EXCLUSION);
-      this.mainImage.image(this.tile, 0, 0);
-    }
-
-    if (PARAMS.mode === 2) {
-      // For each set of points, create a buffer image that set of points and draw it on the canvas.
-      let img = this.p.createGraphics(this.w, this.h);
-      // img.background(this.bgColor); // turn back on!
-      this.points[0].forEach((pnt) => {
-        if (this.bufferImages[pnt.c][pnt.l]) {
+    // The background: Background color, with all the dots in white
+    const bg = this.p.createGraphics(this.w, this.h);
+    bg.background(this.bgColor);
+    this.points.forEach((set) => {
+      set.forEach((pnt) => {
+        if (this.bufferImages[1][pnt.l]) {
           // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
-          img.image(
-            this.bufferImages[pnt.c][pnt.l],
+          bg.image(
+            this.bufferImages[1][pnt.l],
             pnt.x * pnt.l -
-              this.bufferImages[pnt.c][pnt.l].width / 2 +
+              this.bufferImages[1][pnt.l].width / 2 +
               pnt.l *
                 this.layerScale *
                 this.p.map(pnt.x - this.w / 2, -this.w / 2, this.w / 2, -1, 1),
             pnt.y * pnt.l -
-              this.bufferImages[pnt.c][pnt.l].height / 2 +
+              this.bufferImages[1][pnt.l].height / 2 +
               pnt.l *
                 this.layerScale *
                 this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
           );
         }
       });
-      let highlights = this.p.createGraphics(this.w, this.h);
-      this.points[0].forEach((pnt) => {
-        if (Math.random() < PARAMS.highlightchance) {
-          if (this.bufferImages[1][pnt.l]) {
-            // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
-            img.image(
-              this.bufferImages[1][pnt.l],
-              pnt.x * pnt.l -
-                this.bufferImages[1][pnt.l].width / 2 +
-                pnt.l *
-                  this.layerScale *
-                  this.p.map(
-                    pnt.x - this.w / 2,
-                    -this.w / 2,
-                    this.w / 2,
-                    -1,
-                    1
-                  ),
-              pnt.y * pnt.l -
-                this.bufferImages[1][pnt.l].height / 2 +
-                pnt.l *
-                  this.layerScale *
-                  this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
-            );
-          }
-        }
-      });
+    });
 
-      this.tile.image(img, 0, 0);
-      // this.tile.fill(this.palettes[PARAMS.palette]);
-      // if (this.containsContent) this.tile.filter(this.p.BLUR, 20);
+    // Bottom layer: White background with black dots
+    const bottomLayer = this.p.createGraphics(this.w, this.h);
+    bottomLayer.background(255);
+    this.points[0].forEach((pnt) => {
+      if (this.bufferImages[0][pnt.l]) {
+        // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
+        bottomLayer.image(
+          this.bufferImages[0][pnt.l],
+          pnt.x * pnt.l -
+            this.bufferImages[0][pnt.l].width / 2 +
+            pnt.l *
+              this.layerScale *
+              this.p.map(pnt.x - this.w / 2, -this.w / 2, this.w / 2, -1, 1),
+          pnt.y * pnt.l -
+            this.bufferImages[0][pnt.l].height / 2 +
+            pnt.l *
+              this.layerScale *
+              this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
+        );
+      }
+    });
 
-      this.mainImage.background(this.bgColor);
-      // this.mainImage.blendMode(this.p.EXCLUSION);
-      this.mainImage.image(this.tile, 0, 0);
-    }
-    // this.mainImage.noStroke();
+    // Top layer: White background with black dots
+    const topLayer = this.p.createGraphics(this.w, this.h);
+    topLayer.background(255);
+    this.points[1].forEach((pnt) => {
+      if (this.bufferImages[0][pnt.l]) {
+        // #BUG Sometimes this.bufferImages[pnt.l] returns as undefined
+        topLayer.image(
+          this.bufferImages[0][pnt.l],
+          pnt.x * pnt.l -
+            this.bufferImages[0][pnt.l].width / 2 +
+            pnt.l *
+              this.layerScale *
+              this.p.map(pnt.x - this.w / 2, -this.w / 2, this.w / 2, -1, 1),
+          pnt.y * pnt.l -
+            this.bufferImages[0][pnt.l].height / 2 +
+            pnt.l *
+              this.layerScale *
+              this.p.map(pnt.y - this.h / 2, -this.h / 2, this.h / 2, -1, 1)
+        );
+      }
+    });
 
-    // this.mainImage.fill(255); // Turn back on
-    // this.mainImage.rect(0, 0, this.w, this.h); // Turn back on
+    // Overlaps: By screening the top layer against the bottom layer, we are left with the overlaps in black on a white background
+    const overlaps = this.p.createGraphics(this.w, this.h);
+    overlaps.image(bottomLayer, 0, 0);
+    overlaps.blendMode(this.p.SCREEN);
+    overlaps.image(topLayer, 0, 0);
 
-    // this.mainImage.blendMode(this.p.BLEND);
-    // this.mainImage.textAlign(this.p.LEFT, this.p.CENTER);
-    // if (!this.containsContent) {
-    //   const x = (this.annotions[0].x * this.annotions[0].l) / 5;
-    //   const y = (this.annotions[0].y * this.annotions[0].l) / 5;
-    //   this.mainImage.image(
-    //     this.cross,
-    //     x - this.cross.width / 2,
-    //     y - this.cross.height / 2
-    //   );
-    //   this.mainImage.textFont(this.fontBold);
-    //   this.mainImage.text(`${this.annotions[0].label}`, x + 16, y - 18);
-    //   this.mainImage.textFont(this.fontRegular);
-    //   this.mainImage.text(`${this.annotions[0].title}`, x + 16, y - 6);
-    //   this.mainImage.text(`${this.annotions[0].source}`, x + 16, y + 6);
-    //   this.mainImage.text(
-    //     `[${this.annotions[0].embedding[0]}, ${this.annotions[0].embedding[1]}, ${this.annotions[0].embedding[2]}]`,
-    //     x + 15,
-    //     y + 18
-    //   );
-    // }
+    // Highlights: By screening the overlaps against a colored background, we are left with the colored overlaps with a white background
+    const highlights = this.p.createGraphics(this.w, this.h);
+    highlights.background(this.spotColors[0]);
+    highlights.blendMode(this.p.SCREEN);
+    highlights.image(overlaps, 0, 0);
+
+    // Non Overlaps: By differencing the top and bottom layer against a white background, we are left with the non-overlapping areas in black against a white background
+    const nonOverlaps = this.p.createGraphics(this.w, this.h);
+    nonOverlaps.background(255);
+    nonOverlaps.blendMode(this.p.DIFFERENCE);
+    nonOverlaps.image(bottomLayer, 0, 0);
+    nonOverlaps.image(topLayer, 0, 0);
+
+    // Highlights: By screening the non-overlaps against a colored background, we are left with the colored non-overlaps with a white background
+    const baseLayer = this.p.createGraphics(this.w, this.h);
+    baseLayer.background(this.spotColors[1]);
+    baseLayer.blendMode(this.p.SCREEN);
+    baseLayer.image(nonOverlaps, 0, 0);
+
+    // Main image: The main image that is returned - the background image, with the base layer and highlights multiplied over them.
+    this.mainImage.image(bg, 0, 0);
+    this.mainImage.blendMode(this.p.MULTIPLY);
+    this.mainImage.image(baseLayer, 0, 0);
+    this.mainImage.image(highlights, 0, 0);
   }
 }
